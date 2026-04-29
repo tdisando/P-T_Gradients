@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Geothermobarometry — Pressure & Temperature Gradients</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #1c2128;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text-muted: #8b949e;
+    --accent: #58a6ff;
+    --accent2: #f78166;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'EB Garamond', Georgia, serif; min-height: 100vh; }
+  header { border-bottom: 1px solid var(--border); padding: 2.5rem 3rem 2rem; background: var(--surface); }
+  .header-inner { max-width: 1340px; margin: 0 auto; }
+  .eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; letter-spacing: 0.2em; color: var(--accent); text-transform: uppercase; margin-bottom: 0.6rem; }
+  h1 { font-size: 2.2rem; font-weight: 600; line-height: 1.2; margin-bottom: 0.5rem; }
+  h1 em { color: var(--text-muted); font-style: italic; font-weight: 400; }
+  .subtitle { color: var(--text-muted); font-size: 1.05rem; font-style: italic; }
+  .refs { margin-top: 0.8rem; font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: var(--text-muted); }
+  .refs span { color: var(--accent2); }
+  main { max-width: 1340px; margin: 0 auto; padding: 2rem 3rem 4rem; }
+  .controls-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem; }
+  .control-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1.4rem 1.6rem; }
+  .panel-title { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent); margin-bottom: 1rem; padding-bottom: 0.6rem; border-bottom: 1px solid var(--border); }
+  .toggle-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; margin-bottom: 0.9rem; }
+  .toggle-btn { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.7rem; background: var(--surface2); border: 1px solid var(--border); border-radius: 5px; cursor: pointer; font-family: 'EB Garamond', serif; font-size: 0.88rem; color: var(--text-muted); transition: all 0.18s; text-align: left; }
+  .toggle-btn.active { color: var(--text); border-color: var(--active-color, var(--accent)); background: color-mix(in srgb, var(--active-color, var(--accent)) 12%, var(--surface2)); }
+  .toggle-btn:hover { opacity: 0.85; }
+  .swatch { width: 22px; height: 3px; flex-shrink: 0; border-radius: 2px; }
+  .swatch-area { width: 14px; height: 10px; flex-shrink: 0; border-radius: 2px; }
+  .slider-row { display: flex; align-items: center; gap: 1rem; margin-top: 0.6rem; }
+  .slider-label { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; }
+  input[type=range] { flex: 1; accent-color: var(--accent); }
+  .slider-val { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--accent); width: 6rem; text-align: right; }
+  .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem; }
+  .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1.4rem 1.6rem; }
+  .chart-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1rem; }
+  .chart-title { font-size: 1.1rem; font-weight: 600; }
+  .chart-meta { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--text-muted); }
+  .chart-wrap { position: relative; height: 500px; }
+  .crosshair-info { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 0.8rem 1.4rem; margin-bottom: 2rem; font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--text-muted); min-height: 2.2rem; display: flex; align-items: center; gap: 1.8rem; flex-wrap: wrap; }
+  .crosshair-info .info-item { color: var(--text); }
+  .crosshair-info .info-label { margin-right: 0.3rem; }
+  footer { border-top: 1px solid var(--border); padding: 1.5rem 3rem; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--text-muted); }
+  @media (max-width: 900px) { .controls-grid, .charts-grid { grid-template-columns: 1fr; } main, header { padding-left: 1.2rem; padding-right: 1.2rem; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="eyebrow">Geothermobarometry · Interactive Reference</div>
+    <h1>Pressure &amp; Temperature Gradients <em>with Depth</em></h1>
+    <div class="subtitle">Lithostatic pressures and geothermal gradients for key geological settings</div>
+    <div class="refs">References: <span>Cas &amp; Simmons (2018)</span> — pressure gradients · <span>Spear (1993)</span> &amp; <span>Hoinkes et al. (2005)</span> — geothermal gradients</div>
+  </div>
+</header>
+
+<main>
+  <div class="controls-grid">
+    <div class="control-panel">
+      <div class="panel-title">Pressure Series — Toggle Visibility</div>
+      <div class="toggle-grid" id="pressure-toggles"></div>
+      <div class="slider-row">
+        <span class="slider-label">Max depth</span>
+        <input type="range" id="depth-slider-p" min="5" max="50" value="50" step="1">
+        <span class="slider-val" id="depth-val-p">50 km</span>
+      </div>
+    </div>
+    <div class="control-panel">
+      <div class="panel-title">Temperature Series — Toggle Visibility</div>
+      <div class="toggle-grid" id="temp-toggles"></div>
+      <div class="slider-row">
+        <span class="slider-label">Max depth</span>
+        <input type="range" id="depth-slider-t" min="5" max="50" value="40" step="1">
+        <span class="slider-val" id="depth-val-t">40 km</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="crosshair-info" id="hover-info">
+    <span>Hover over either chart to read values at depth.</span>
+  </div>
+
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-header">
+        <span class="chart-title">Pressure vs. Depth</span>
+        <span class="chart-meta">kbar · Cas &amp; Simmons (2018)</span>
+      </div>
+      <div class="chart-wrap"><canvas id="pressureChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <span class="chart-title">Temperature vs. Depth</span>
+        <span class="chart-meta">°C · Spear (1993) &amp; Hoinkes et al. (2005)</span>
+      </div>
+      <div class="chart-wrap"><canvas id="tempChart"></canvas></div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  Data: Cas &amp; Simmons (2018) · Spear (1993) · Hoinkes et al. (2005) &nbsp;|&nbsp; Visualization built with Chart.js
+</footer>
+
+<script>
+const depths = [0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50];
+const tempDepths = depths.slice(0,21); // 0–40 km
+
+// ── PRESSURE DATA (kbar = MPa / 100) ─────────────────────────────────────────
+function toKbar(mpa){ return +(mpa/100).toFixed(4); }
+const rawMPa = {
+  water:   [0.101325,19.6,39.2,58.8,78.4,98,117.6,137.2,156.8,176.4,196,215.6,235.2,254.8,274.4,294,313.6,333.2,352.8,372.4,392,411.6,431.2,450.8,470.4,490],
+  felsic:  [0.101325,43.12,86.24,129.36,172.48,215.6,258.72,301.84,344.96,388.08,431.2,474.32,517.44,560.56,603.68,646.8,689.92,733.04,776.16,819.28,862.4,905.52,948.64,991.76,1034.88,1078],
+  interm:  [0.101325,48.02,96.04,144.06,192.08,240.1,288.12,336.14,384.16,432.18,480.2,528.22,576.24,624.26,672.28,720.3,768.32,816.34,864.36,912.38,960.4,1008.42,1056.44,1104.46,1152.48,1200.5],
+  mafic:   [0.101325,52.92,105.84,158.76,211.68,264.6,317.52,370.44,423.36,476.28,529.2,582.12,635.04,687.96,740.88,793.8,846.72,899.64,952.56,1005.48,1058.4,1111.32,1164.24,1217.16,1270.08,1323],
+  contarc: [0.101325,49,98,147,196,245,294,343,392,441,490,539,588,637,686,735,784,833,882,931,980,1029,1078,1127,1176,1225],
+  oceanic: [0.101325,56.84,113.68,170.52,227.36,284.2,341.04,397.88,454.72,511.56,568.4,625.24,682.08,738.92,795.76,852.6,909.44,966.28,1023.12,1079.96,1136.8,1193.64,1250.48,1307.32,1364.16,1421],
+  mantle:  [null,null,null,68.6,137.2,205.8,274.4,343,411.6,480.2,548.8,617.4,686,754.6,823.2,891.8,960.4,1029,1097.6,1166.2,1234.8,1303.4,1372,1440.6,1509.2,1577.8],
+};
+const kbar = {};
+for(const k in rawMPa) kbar[k] = rawMPa[k].map(v=>v===null?null:toKbar(v));
+
+const pressureSeries = [
+  { key:'water',   label:'Water (Hydrostatic)',   color:'#40c4ff', dash:[6,4], lw:1.8, data:kbar.water },
+  { key:'felsic',  label:'Felsic Magma',          color:'#e74c3c', dash:[3,3], lw:2,   data:kbar.felsic },
+  { key:'interm',  label:'Intermediate Magma',    color:'#95a5a6', dash:[3,3], lw:2,   data:kbar.interm },
+  { key:'mafic',   label:'Mafic Magma',           color:'#27ae60', dash:[3,3], lw:2,   data:kbar.mafic },
+  { key:'contarc', label:'Continental/Arc Crust', color:'#e67e22', dash:[],    lw:2.2, data:kbar.contarc },
+  { key:'oceanic', label:'Oceanic Crust',         color:'#1a4fa0', dash:[],    lw:2.2, data:kbar.oceanic },
+  { key:'mantle',  label:'Mantle',                color:'#9b59b6', dash:[],    lw:2,   data:kbar.mantle },
+];
+
+// ── TEMPERATURE DATA ──────────────────────────────────────────────────────────
+// Shaded field boundaries (°C/km gradients from surface at 15°C)
+const gradientLine = g => tempDepths.map(d => 15 + g*d);
+
+// Field boundaries
+const B = {
+  subductLow:  gradientLine(5),
+  subductHigh: gradientLine(10),
+  contLow:     gradientLine(16),
+  contHigh:    gradientLine(22),
+  magLow:      gradientLine(40),
+  magHigh:     gradientLine(90),
+  highPT:      gradientLine(10),
+  lowPT:       gradientLine(40),
+};
+
+// Continental & Oceanic curves (from Spear 1993 / Hoinkes et al. 2005)
+const contCurve  = tempDepths.map((_,i)=>(i===0)?15:(i===10)?414.39:(i===20)?656.47:null);
+const oceanCurve = tempDepths.map((_,i)=>(i===0)?15:(i===10)?512.23:(i===20)?793.88:null);
+
+// Gradient lines drawn in plot with labels (always visible, not in toggles)
+const gradLines = [5,10,16,18,22,31,40,90];
+
+// Toggle-able series (shaded areas + named curves)
+const tempSeriesToggle = [
+  { key:'subduct',    label:'Subduction Zones',    color:'rgba(120,60,180,1)',   areaColor:'rgba(120,60,180,0.30)', isArea:true },
+  { key:'contcrust',  label:'Continental Crust',   color:'rgba(190,110,10,1)',   areaColor:'rgba(190,110,10,0.28)', isArea:true },
+  { key:'magarc',     label:'Magmatic Arcs',       color:'rgba(180,40,20,1)',    areaColor:'rgba(180,40,20,0.24)', isArea:true },
+  { key:'contcurve',  label:'Continental Curve',   color:'#FF8C00',             isArea:false },
+  { key:'oceancurve', label:'Oceanic Curve',       color:'#1E6FD9',             isArea:false },
+  { key:'highpt',     label:'High P/T-ratio',      color:'#7840B8',             isArea:false },
+  { key:'lowpt',      label:'Low P/T-ratio',       color:'#D4890A',             isArea:false },
+];
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+const visP = Object.fromEntries(pressureSeries.map(s=>[s.key,true]));
+const visT = Object.fromEntries(tempSeriesToggle.map(s=>[s.key,true]));
+let maxDepthP = 50, maxDepthT = 40;
+
+// ── AXIS AUTO-MAX HELPERS ─────────────────────────────────────────────────────
+function maxKbarAtDepth(d) {
+  // mantle has the highest gradient among what's shown; use it if visible
+  const idx = depths.indexOf(d);
+  if(idx<0) return +(d * 1577.8/50 / 100).toFixed(2);
+  return +(kbar.mantle[idx] || kbar.oceanic[idx] || kbar.mafic[idx]).toFixed(2);
+}
+function maxTempAtDepth(d) { return Math.round(15 + 90*d); }
+
+// ── PRESSURE CHART ────────────────────────────────────────────────────────────
+function makePressureDatasets() {
+  return pressureSeries.map(s => ({
+    label: s.label,
+    _key: s.key,
+    data: depths.map((d,i)=>({x: s.data[i], y: d})),
+    borderColor: s.color,
+    borderWidth: s.lw,
+    borderDash: s.dash,
+    pointRadius: 0,
+    pointHoverRadius: 4,
+    tension: 0.1,
+    hidden: !visP[s.key],
+    spanGaps: false,
+    fill: false,
+  }));
+}
+
+const pCtx = document.getElementById('pressureChart').getContext('2d');
+const pressureChart = new Chart(pCtx, {
+  type:'line',
+  data:{ datasets: makePressureDatasets() },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    interaction:{ mode:'index', intersect:false },
+    plugins:{ legend:{display:false}, tooltip:{enabled:false} },
+    scales:{
+      x:{ type:'linear', position:'top', min:0, max: maxKbarAtDepth(maxDepthP)+0.5,
+          title:{display:true,text:'Pressure (kbar)',color:'#8b949e',font:{family:'JetBrains Mono',size:10}},
+          grid:{color:'rgba(48,54,61,0.8)'}, ticks:{color:'#8b949e',font:{family:'JetBrains Mono',size:10}} },
+      y:{ reverse:true, min:0, max:maxDepthP,
+          title:{display:true,text:'Depth (km)',color:'#8b949e',font:{family:'JetBrains Mono',size:10}},
+          grid:{color:'rgba(48,54,61,0.8)'}, ticks:{color:'#8b949e',font:{family:'JetBrains Mono',size:10}} }
+    }
+  }
+});
+
+// ── TEMPERATURE CHART ─────────────────────────────────────────────────────────
+function makeTempDatasets() {
+  const ds = [];
+
+  // Shaded field: Subduction Zones (5–10°C/km) — purple, no border lines
+  ds.push({ label:'_sz_lo', _key:'subduct', data:tempDepths.map((d,i)=>({x:B.subductLow[i],y:d})),
+    borderColor:'transparent', borderWidth:0, pointRadius:0, fill:false, hidden:!visT.subduct, tension:0.1 });
+  ds.push({ label:'_sz_hi', _key:'subduct', data:tempDepths.map((d,i)=>({x:B.subductHigh[i],y:d})),
+    borderColor:'transparent', borderWidth:0,
+    backgroundColor:'rgba(120,60,180,0.30)', pointRadius:0, fill:'-1', hidden:!visT.subduct, tension:0.1 });
+
+  // Shaded field: Continental Crust (16–22°C/km) — orange-brown, no border lines
+  ds.push({ label:'_cc_lo', _key:'contcrust', data:tempDepths.map((d,i)=>({x:B.contLow[i],y:d})),
+    borderColor:'transparent', borderWidth:0, pointRadius:0, fill:false, hidden:!visT.contcrust, tension:0.1 });
+  ds.push({ label:'_cc_hi', _key:'contcrust', data:tempDepths.map((d,i)=>({x:B.contHigh[i],y:d})),
+    borderColor:'transparent', borderWidth:0,
+    backgroundColor:'rgba(190,110,10,0.28)', pointRadius:0, fill:'-1', hidden:!visT.contcrust, tension:0.1 });
+
+  // Shaded field: Magmatic Arcs (40–90°C/km) — red, no border lines
+  ds.push({ label:'_ma_lo', _key:'magarc', data:tempDepths.map((d,i)=>({x:B.magLow[i],y:d})),
+    borderColor:'transparent', borderWidth:0, pointRadius:0, fill:false, hidden:!visT.magarc, tension:0.1 });
+  ds.push({ label:'_ma_hi', _key:'magarc', data:tempDepths.map((d,i)=>({x:B.magHigh[i],y:d})),
+    borderColor:'transparent', borderWidth:0,
+    backgroundColor:'rgba(180,40,20,0.24)', pointRadius:0, fill:'-1', hidden:!visT.magarc, tension:0.1 });
+
+  // High P/T dashed — purple, matching subduction field
+  ds.push({ label:'High P/T-ratio', _key:'highpt',
+    data:tempDepths.map((d,i)=>({x:B.highPT[i],y:d})),
+    borderColor:'#7840B8', borderWidth:2.2, borderDash:[8,5],
+    pointRadius:0, fill:false, hidden:!visT.highpt, tension:0.1 });
+
+  // Low P/T dashed — same orange as continental field, full opacity
+  ds.push({ label:'Low P/T-ratio', _key:'lowpt',
+    data:tempDepths.map((d,i)=>({x:B.lowPT[i],y:d})),
+    borderColor:'#D4890A', borderWidth:2.2, borderDash:[8,5],
+    pointRadius:0, fill:false, hidden:!visT.lowpt, tension:0.1 });
+
+  // Continental curve — orange dashed
+  ds.push({ label:'Continental Curve', _key:'contcurve',
+    data:tempDepths.map((d,i)=>({x:contCurve[i],y:d})),
+    borderColor:'#FF8C00', borderWidth:2.8, borderDash:[10,5],
+    pointRadius:0,
+    fill:false, hidden:!visT.contcurve, spanGaps:false, tension:0.3 });
+
+  // Oceanic curve — navy dashed
+  ds.push({ label:'Oceanic Curve', _key:'oceancurve',
+    data:tempDepths.map((d,i)=>({x:oceanCurve[i],y:d})),
+    borderColor:'#1E6FD9', borderWidth:2.8, borderDash:[10,5],
+    pointRadius:0,
+    fill:false, hidden:!visT.oceancurve, spanGaps:false, tension:0.3 });
+
+  // Gradient lines — red thin dashed, always visible, labelled in-plot
+  gradLines.forEach(g => {
+    ds.push({ label:`_grad_${g}`, _key:'_grad',
+      data:tempDepths.map(d=>({x:15+g*d, y:d})),
+      borderColor:'#E03030', borderWidth:1.1, borderDash:[3,4],
+      pointRadius:0, fill:false, hidden:false, tension:0.1 });
+  });
+
+  return ds;
+}
+
+// Plugin: draw gradient labels parallel to each line, reading downward
+const gradLabelPlugin = {
+  id:'gradLabels',
+  afterDraw(chart) {
+    if(chart.canvas.id !== 'tempChart') return;
+    const ctx = chart.ctx;
+    const xS = chart.scales.x, yS = chart.scales.y;
+    const minD = yS.min, maxD = yS.max;
+    // Place label at ~70% of visible depth range along the line
+    const labelDepth = minD + (maxD - minD) * 0.70;
+
+    gradLines.forEach(g => {
+      const T_at_label = 15 + g * labelDepth;
+      // Skip if outside visible x range
+      if(T_at_label > xS.max || T_at_label < xS.min) return;
+
+      // Two points to compute the line angle in pixel space
+      const d1 = Math.max(minD, labelDepth - 3);
+      const d2 = Math.min(maxD, labelDepth + 3);
+      const T1 = 15 + g * d1;
+      const T2 = 15 + g * d2;
+
+      const x1 = xS.getPixelForValue(T1), y1 = yS.getPixelForValue(d1);
+      const x2 = xS.getPixelForValue(T2), y2 = yS.getPixelForValue(d2);
+      const angle = Math.atan2(y2 - y1, x2 - x1); // angle of line going downward
+
+      const px = xS.getPixelForValue(T_at_label);
+      const py = yS.getPixelForValue(labelDepth);
+
+      ctx.save();
+      ctx.font = '8.5px JetBrains Mono, monospace';
+      ctx.fillStyle = '#E03030';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.translate(px, py);
+      ctx.rotate(angle); // parallel to line, text reads downward along slope
+      ctx.fillText(`${g}°C/km`, 0, -3);
+      ctx.restore();
+    });
+  }
+};
+
+const tCtx = document.getElementById('tempChart').getContext('2d');
+const tempChart = new Chart(tCtx, {
+  type:'line',
+  data:{ datasets: makeTempDatasets() },
+  plugins:[gradLabelPlugin],
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    interaction:{ mode:'index', intersect:false },
+    plugins:{ legend:{display:false}, tooltip:{enabled:false} },
+    scales:{
+      x:{ type:'linear', position:'top', min:0, max: maxTempAtDepth(maxDepthT),
+          title:{display:true,text:'Temperature (°C)',color:'#8b949e',font:{family:'JetBrains Mono',size:10}},
+          grid:{color:'rgba(48,54,61,0.8)'}, ticks:{color:'#8b949e',font:{family:'JetBrains Mono',size:10}} },
+      y:{ reverse:true, min:0, max:maxDepthT,
+          title:{display:true,text:'Depth (km)',color:'#8b949e',font:{family:'JetBrains Mono',size:10}},
+          grid:{color:'rgba(48,54,61,0.8)'}, ticks:{color:'#8b949e',font:{family:'JetBrains Mono',size:10}} }
+    }
+  }
+});
+
+// ── TOGGLE BUTTONS ────────────────────────────────────────────────────────────
+function buildPressureToggles() {
+  const container = document.getElementById('pressure-toggles');
+  pressureSeries.forEach((s,i) => {
+    const btn = document.createElement('button');
+    btn.className = 'toggle-btn active';
+    btn.style.setProperty('--active-color', s.color);
+    const sw = `<span class="swatch" style="background:${s.color};${s.dash.length?'background:repeating-linear-gradient(90deg,'+s.color+' 0 4px,transparent 4px 7px)':''}"></span>`;
+    btn.innerHTML = `${sw}${s.label}`;
+    btn.addEventListener('click',()=>{
+      visP[s.key] = !visP[s.key];
+      btn.classList.toggle('active', visP[s.key]);
+      pressureChart.data.datasets[i].hidden = !visP[s.key];
+      pressureChart.update();
+    });
+    container.appendChild(btn);
+  });
+}
+
+function buildTempToggles() {
+  const container = document.getElementById('temp-toggles');
+  tempSeriesToggle.forEach(s => {
+    const btn = document.createElement('button');
+    btn.className = 'toggle-btn active';
+    const solidColor = s.isArea ? s.color : s.color;
+    btn.style.setProperty('--active-color', solidColor);
+    let sw;
+    if(s.isArea) {
+      sw = `<span class="swatch-area" style="background:${s.areaColor};border:1px solid ${s.color}"></span>`;
+    } else {
+      sw = `<span class="swatch" style="background:${s.color}"></span>`;
+    }
+    btn.innerHTML = `${sw}${s.label}`;
+    btn.addEventListener('click',()=>{
+      visT[s.key] = !visT[s.key];
+      btn.classList.toggle('active', visT[s.key]);
+      tempChart.data.datasets.forEach(ds=>{ if(ds._key===s.key) ds.hidden=!visT[s.key]; });
+      tempChart.update();
+    });
+    container.appendChild(btn);
+  });
+}
+
+buildPressureToggles();
+buildTempToggles();
+
+// ── DEPTH SLIDERS — auto-update both axes ─────────────────────────────────────
+document.getElementById('depth-slider-p').addEventListener('input', function(){
+  maxDepthP = +this.value;
+  const kMax = maxKbarAtDepth(maxDepthP);
+  document.getElementById('depth-val-p').textContent = `${maxDepthP} km · ${kMax} kbar`;
+  pressureChart.options.scales.y.max = maxDepthP;
+  pressureChart.options.scales.x.max = kMax + 0.3;
+  pressureChart.update();
+});
+
+document.getElementById('depth-slider-t').addEventListener('input', function(){
+  maxDepthT = +this.value;
+  const tMax = maxTempAtDepth(maxDepthT);
+  document.getElementById('depth-val-t').textContent = `${maxDepthT} km · ${tMax} °C`;
+  tempChart.options.scales.y.max = maxDepthT;
+  tempChart.options.scales.x.max = tMax;
+  tempChart.update();
+});
+
+// ── HOVER INFO ────────────────────────────────────────────────────────────────
+function attachHover(chart, unit) {
+  chart.canvas.addEventListener('mousemove', evt=>{
+    const pts = chart.getElementsAtEventForMode(evt,'index',{intersect:false},true);
+    if(!pts.length) return;
+    const ptIdx = pts[0].index;
+    const depth = chart.data.datasets[pts[0].datasetIndex].data[ptIdx]?.y;
+    if(depth==null) return;
+    let html = `<span><span class="info-label">Depth:</span><span class="info-item">${depth} km</span></span>`;
+    chart.data.datasets.forEach(ds=>{
+      if(ds.hidden || ds.label.startsWith('_')) return;
+      const v = ds.data[ptIdx];
+      if(!v || v.x==null) return;
+      const col = typeof ds.borderColor==='string'&&!ds.borderColor.startsWith('transparent')?ds.borderColor:'#aaa';
+      html += `<span><span class="info-label" style="color:${col}">${ds.label}:</span><span class="info-item">${(+v.x).toFixed(1)} ${unit}</span></span>`;
+    });
+    document.getElementById('hover-info').innerHTML = html;
+  });
+  chart.canvas.addEventListener('mouseleave',()=>{
+    document.getElementById('hover-info').innerHTML='<span>Hover over either chart to read values at depth.</span>';
+  });
+}
+
+attachHover(pressureChart,'kbar');
+attachHover(tempChart,'°C');
+
+// Init display
+document.getElementById('depth-val-p').textContent = `50 km · ${maxKbarAtDepth(50)} kbar`;
+document.getElementById('depth-val-t').textContent = `40 km · ${maxTempAtDepth(40)} °C`;
+</script>
+</body>
+</html>
