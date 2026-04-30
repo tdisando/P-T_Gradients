@@ -1,32 +1,5 @@
-# Project Title
+# Pressure & Thermal Gradients
+Interactive Chart of Lithostatic Pressure and Geothermal Gradients along the Depth
 
-## Project Description
-This project aims to provide advanced gradient techniques for various applications. The techniques implemented here are designed to optimize performance in computational tasks.
-
-## Features
-- **Fast and Efficient**: Designed to perform optimally.
-- **Easy to Use**: Simple API for integration into your projects.
-- **Comprehensive Documentation**: Includes detailed instructions and examples.
-
-## Installation
-To install the package, run:
-```bash
-pip install gradients-package
-```
-
-## Usage
-Here's a simple example of how to use this package:
-```python
-from gradients import Gradient
-
-# Create a new gradient instance
-gradient = Gradient()
-
-# Run the gradient calculation
-result = gradient.calculate()
-print(result)
-```
-
-## References
-1. Doe, J. (2023). Understanding Gradients: A Comprehensive Guide. Academic Press.
-2. Smith, A. (2024). Gradient Techniques in Machine Learning. Journal of AI Research.
+## About the plots
+Inspired by subaqueous–subaerial eruption dynamics described by Cas and Simmons (2018; https://doi.org/10.3389/feart.2018.00198), and by regional metamorphic thermal gradients as synthesised in Spear et al. (1991; https://doi.org/10.1146/annurev.ea.19.050191.002435) and Condie (1997; https://doi.org/10.1016/S0301-9268(97)00025-2).
