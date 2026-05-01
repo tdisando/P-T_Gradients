@@ -9,3 +9,5 @@ Inspired by:
 - **Spear (1993)** Metamorphic Phase Equilibria and Pressure-Temperature-Time Paths. Mineralogical Society of America Monograph.
 
 - **Hoinkes et al. (2005)** "Metamorphic Processes." In: McCann, T. (Ed.), The Geology of Central Europe: Volume 2: Mesozoic and Cenozoic. Geological Society of London.
+
+*Made with ❤️ for the volcanology community*
